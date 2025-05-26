@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ArrowUp, ArrowDown, Filter } from 'lucide-react';
 
 interface ColumnHeaderProps {
@@ -29,11 +29,23 @@ export function ColumnHeader({
   isSorted,
 }: ColumnHeaderProps) {
   const [isResizing, setIsResizing] = useState(false);
+  const [currentWidth, setCurrentWidth] = useState(width);
   const startX = useRef<number>(0);
   const startWidth = useRef<number>(0);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const columnHeaderRef = useRef<HTMLDivElement>(null);
+  
+  // Constants for min/max width
+  const MIN_COLUMN_WIDTH = 50;
+  const MAX_COLUMN_WIDTH = 500;
 
-  // Handle resize start
-  const handleResizeStart = (e: React.MouseEvent) => {
+  // Update currentWidth when width prop changes
+  useEffect(() => {
+    setCurrentWidth(width);
+  }, [width]);
+
+  // Handle resize start (mouse)
+  const handleMouseResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -41,33 +53,96 @@ export function ColumnHeader({
     startX.current = e.clientX;
     startWidth.current = width;
     onResizeStart();
-    
-    document.addEventListener('mousemove', handleResizeMove);
-    document.addEventListener('mouseup', handleResizeEnd);
-  };
+  }, [width, onResizeStart]);
 
-  // Handle resize move
-  const handleResizeMove = (e: MouseEvent) => {
+  // Handle resize start (touch)
+  const handleTouchResizeStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (e.touches.length === 1) {
+      setIsResizing(true);
+      startX.current = e.touches[0].clientX;
+      startWidth.current = width;
+      onResizeStart();
+    }
+  }, [width, onResizeStart]);
+
+  // Handle resize move (mouse)
+  const handleMouseResizeMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
     
     const diff = e.clientX - startX.current;
-    const newWidth = Math.max(50, startWidth.current + diff); // Minimum width of 50px
+    const newWidth = Math.max(
+      MIN_COLUMN_WIDTH, 
+      Math.min(MAX_COLUMN_WIDTH, startWidth.current + diff)
+    );
     
+    setCurrentWidth(newWidth);
     onResize(newWidth);
-  };
+  }, [isResizing, onResize]);
+
+  // Handle resize move (touch)
+  const handleTouchResizeMove = useCallback((e: TouchEvent) => {
+    if (!isResizing || e.touches.length !== 1) return;
+    
+    e.preventDefault(); // Prevent scrolling while resizing
+    
+    const diff = e.touches[0].clientX - startX.current;
+    const newWidth = Math.max(
+      MIN_COLUMN_WIDTH, 
+      Math.min(MAX_COLUMN_WIDTH, startWidth.current + diff)
+    );
+    
+    setCurrentWidth(newWidth);
+    onResize(newWidth);
+  }, [isResizing, onResize]);
 
   // Handle resize end
-  const handleResizeEnd = () => {
+  const handleResizeEnd = useCallback(() => {
     setIsResizing(false);
-    document.removeEventListener('mousemove', handleResizeMove);
-    document.removeEventListener('mouseup', handleResizeEnd);
+  }, []);
+
+  // Set up and clean up event listeners
+  useEffect(() => {
+    if (isResizing) {
+      // Mouse events
+      document.addEventListener('mousemove', handleMouseResizeMove);
+      document.addEventListener('mouseup', handleResizeEnd);
+      
+      // Touch events
+      document.addEventListener('touchmove', handleTouchResizeMove, { passive: false });
+      document.addEventListener('touchend', handleResizeEnd);
+      document.addEventListener('touchcancel', handleResizeEnd);
+    }
+    
+    return () => {
+      // Clean up all event listeners
+      document.removeEventListener('mousemove', handleMouseResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+      document.removeEventListener('touchmove', handleTouchResizeMove);
+      document.removeEventListener('touchend', handleResizeEnd);
+      document.removeEventListener('touchcancel', handleResizeEnd);
+    };
+  }, [isResizing, handleMouseResizeMove, handleTouchResizeMove, handleResizeEnd]);
+
+  // Handle double-click to auto-size column (example implementation)
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Reset to default width (100px) or could implement auto-sizing based on content
+    const autoWidth = 100;
+    setCurrentWidth(autoWidth);
+    onResize(autoWidth);
   };
 
   return (
     <div
-      className="column-header"
+      ref={columnHeaderRef}
+      className={`column-header ${isResizing ? 'resizing' : ''}`}
       style={{
-        width,
+        width: currentWidth,
         height,
         left,
       }}
@@ -97,10 +172,20 @@ export function ColumnHeader({
         <Filter size={12} />
       </button>
       
+      {/* Resize handle with improved touch target */}
       <div
+        ref={resizeHandleRef}
         className="column-resize-handle"
-        onMouseDown={handleResizeStart}
-      />
+        onMouseDown={handleMouseResizeStart}
+        onTouchStart={handleTouchResizeStart}
+        onDoubleClick={handleDoubleClick}
+      >
+        {isResizing && (
+          <div className="resize-indicator">
+            <div className="resize-indicator-label">{Math.round(currentWidth)}px</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
