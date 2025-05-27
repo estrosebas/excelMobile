@@ -325,7 +325,10 @@ button:disabled {
   position: absolute;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 1;
+  overflow: auto;
 }
 
 .column-headers,
@@ -337,10 +340,19 @@ button:disabled {
 
 .column-headers {
   top: 0;
+  left: 0;
+  right: 0;
+  height: var(--column-header-height);
+  display: flex;
+  background-color: var(--color-gray-200);
 }
 
 .row-headers {
+  position: absolute;
   left: 0;
+  width: var(--row-header-width);
+  background-color: var(--color-gray-200);
+  z-index: 2;
 }
 
 .corner-header {
@@ -373,7 +385,18 @@ button:disabled {
 }
 
 .row-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
+  background-color: var(--color-gray-200);
+  border-right: 1px solid var(--color-gray-300);
+  border-bottom: 1px solid var(--color-gray-300);
+  box-sizing: border-box;
+  position: absolute;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  user-select: none;
 }
 
 .cell {
