@@ -47,7 +47,7 @@
   --status-bar-height: 24px;
   --cell-min-width: 100px;
   --cell-height: 24px;
-  --row-header-width: 40px;
+  --row-header-width: 0px;
   --column-header-height: 24px;
 }
 
@@ -350,6 +350,7 @@ button:disabled {
 .row-headers {
   position: absolute;
   left: 0;
+  top: var(--row-header-width);
   width: var(--row-header-width);
   background-color: var(--color-gray-200);
   z-index: 2;
