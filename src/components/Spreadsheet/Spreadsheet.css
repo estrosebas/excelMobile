@@ -319,19 +319,31 @@ button:disabled {
   flex: 1;
   overflow: auto;
   position: relative;
+  height: 100%;
 }
 
 .spreadsheet-grid {
-  position: absolute;
+  position: relative;
+  width: fit-content;
+  min-width: 100%;
+  height: fit-content;
+  min-height: 100%;
+  z-index: 1;
+}
+
+.column-headers {
+  position: sticky;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  z-index: 1;
-  overflow: auto;
+  background-color: var(--color-gray-200);
+  z-index: 20;  /* Increased z-index to ensure it stays above other elements */
+  border-bottom: 1px solid var(--color-gray-300);
+  display: flex;
+  height: var(--column-header-height);
+  pointer-events: auto; /* Ensure clickable */
 }
 
-.column-headers,
 .row-headers {
   position: sticky;
   background-color: var(--color-gray-200);
